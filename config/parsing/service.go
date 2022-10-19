@@ -2,6 +2,8 @@ package parsing
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 	"strings"
 
 	"github.com/go-gost/core/admission"
@@ -15,6 +17,7 @@ import (
 	"github.com/go-gost/core/recorder"
 	"github.com/go-gost/core/selector"
 	"github.com/go-gost/core/service"
+	"github.com/go-gost/core/sniff/stun"
 	xchain "github.com/go-gost/x/chain"
 	"github.com/go-gost/x/config"
 	tls_util "github.com/go-gost/x/internal/util/tls"
@@ -79,6 +82,7 @@ func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
 		}
 	}
 
+	var STUN *stun.Spoof
 	var ppv int
 	ifce := cfg.Interface
 	if cfg.Metadata != nil {
@@ -91,6 +95,29 @@ func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
 			sockOpts = &chain.SockOpts{
 				Mark: v,
 			}
+		}
+
+		var mark int
+		if sockOpts !=nil && sockOpts.Mark >= 0 {
+			mark = sockOpts.Mark
+		} else {
+			_, portString, err := net.SplitHostPort(cfg.Addr)
+			if err != nil {
+				return nil, fmt.Errorf("spoof input value error: %s", err)
+			}
+			port, err := strconv.Atoi(portString)
+			if err != nil {
+				return nil, fmt.Errorf("spoof input value(port) error: %s", err)
+			}
+
+			sockOpts = &chain.SockOpts{
+				Mark: port,
+			}
+			mark=port
+		}
+		STUN, err = stun.InitStun(md,mark)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -180,6 +207,7 @@ func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
 			handler.TLSConfigOption(tlsConfig),
 			handler.RateLimiterOption(registry.RateLimiterRegistry().Get(cfg.RLimiter)),
 			handler.LoggerOption(handlerLogger),
+			handler.StunOption(STUN,handlerLogger),
 		)
 	} else {
 		return nil, fmt.Errorf("unregistered handler: %s", cfg.Handler.Type)
@@ -201,7 +229,7 @@ func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
 		return nil, err
 	}
 
-	s := xservice.NewService(cfg.Name, ln, h,
+	s := xservice.NewService(cfg.Name, ln, h, *STUN,
 		xservice.AdmissionOption(admission.AdmissionGroup(admissions...)),
 		xservice.LoggerOption(serviceLogger),
 	)

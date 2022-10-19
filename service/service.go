@@ -12,6 +12,7 @@ import (
 	"github.com/go-gost/core/metrics"
 	"github.com/go-gost/core/recorder"
 	"github.com/go-gost/core/service"
+	"github.com/go-gost/core/sniff/stun"
 	sx "github.com/go-gost/x/internal/util/selector"
 	xmetrics "github.com/go-gost/x/metrics"
 )
@@ -47,9 +48,10 @@ type defaultService struct {
 	listener listener.Listener
 	handler  handler.Handler
 	options  options
+	stun     stun.Spoof
 }
 
-func NewService(name string, ln listener.Listener, h handler.Handler, opts ...Option) service.Service {
+func NewService(name string, ln listener.Listener, h handler.Handler, st stun.Spoof, opts ...Option) service.Service {
 	var options options
 	for _, opt := range opts {
 		opt(&options)
@@ -59,6 +61,7 @@ func NewService(name string, ln listener.Listener, h handler.Handler, opts ...Op
 		listener: ln,
 		handler:  h,
 		options:  options,
+		stun:     st,
 	}
 }
 
@@ -67,6 +70,7 @@ func (s *defaultService) Addr() net.Addr {
 }
 
 func (s *defaultService) Close() error {
+	s.stun.Close()
 	return s.listener.Close()
 }
 
@@ -76,6 +80,21 @@ func (s *defaultService) Serve() error {
 		metrics.Labels{}); v != nil {
 		v.Inc()
 		defer v.Dec()
+	}
+
+	if s.stun.SpoofEnable {
+		if s.stun.IsNFQ() {
+
+			// if s.queue.ctx == nil {
+			// 	return false, fmt.Errorf("STUN: ctx must be set")
+			// }
+			go s.stun.StartNFQ()
+			// return true,nil
+		}
+
+		// if isStun,err := s.stun.Spoof(); isStun {
+		// 	return err
+		// }
 	}
 
 	var tempDelay time.Duration

@@ -58,7 +58,8 @@ func (h *socks5Handler) handleUDPTun(ctx context.Context, conn net.Conn, network
 
 	r := udp.NewRelay(socks.UDPTunServerConn(conn), pc).
 		WithBypass(h.options.Bypass).
-		WithLogger(log)
+		WithLogger(log).
+		WithStun(*h.options.Stun)
 	r.SetBufferSize(h.md.udpBufferSize)
 
 	t := time.Now()

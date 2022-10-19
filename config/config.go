@@ -265,6 +265,14 @@ type ServiceConfig struct {
 	Interface string `yaml:",omitempty" json:"interface,omitempty"`
 	// DEPRECATED by metadata.so_mark since beta.5
 	SockOpts   *SockOptsConfig   `yaml:"sockopts,omitempty" json:"sockopts,omitempty"`
+	// // STUN
+	// Stun       string            `yaml:",omitempty" json:"stun,omitempty"`
+	// StunOnly   bool              `yaml:",omitempty" json:"stunonly,omitempty"`
+	// NFQ        bool              `yaml:",omitempty" json:"nfq,omitempty"`
+	// NFQID      string            `yaml:",omitempty" json:"nfqid,omitempty"`
+	// SrcMAC     string            `yaml:",omitempty" json:"srcmac,omitempty"`
+	// DstMAC     string            `yaml:",omitempty" json:"dstmac,omitempty"`
+	// //
 	Admission  string            `yaml:",omitempty" json:"admission,omitempty"`
 	Admissions []string          `yaml:",omitempty" json:"admissions,omitempty"`
 	Bypass     string            `yaml:",omitempty" json:"bypass,omitempty"`

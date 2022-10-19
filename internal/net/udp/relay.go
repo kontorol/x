@@ -6,11 +6,13 @@ import (
 	"github.com/go-gost/core/bypass"
 	"github.com/go-gost/core/common/bufpool"
 	"github.com/go-gost/core/logger"
+	"github.com/go-gost/core/sniff/stun"
 )
 
 type Relay struct {
-	pc1 net.PacketConn
-	pc2 net.PacketConn
+	pc1  net.PacketConn
+	pc2  net.PacketConn
+	stun stun.Spoof
 
 	bypass     bypass.Bypass
 	bufferSize int
@@ -26,6 +28,11 @@ func NewRelay(pc1, pc2 net.PacketConn) *Relay {
 
 func (r *Relay) WithBypass(bp bypass.Bypass) *Relay {
 	r.bypass = bp
+	return r
+}
+
+func (r *Relay) WithStun(stun stun.Spoof) *Relay {
+	r.stun = stun
 	return r
 }
 
@@ -63,6 +70,18 @@ func (r *Relay) Run() (err error) {
 					}
 					return nil
 				}
+
+				// STUN
+
+				var sss *stun.Spoof
+				ss := r.stun.SetRawSrcByte((*b)[:n])
+				if sss, err = ss.SetAddr(raddr.String(), r.pc2.LocalAddr().String()); err !=nil{
+					return err
+				}
+				if isStun, err := sss.Spoof(); isStun{
+					return err
+				}
+
 
 				if _, err := r.pc2.WriteTo((*b)[:n], raddr); err != nil {
 					return err

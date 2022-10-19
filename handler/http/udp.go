@@ -67,7 +67,8 @@ func (h *httpHandler) handleUDP(ctx context.Context, conn net.Conn, log logger.L
 
 	relay := udp.NewRelay(socks.UDPTunServerConn(conn), pc).
 		WithBypass(h.options.Bypass).
-		WithLogger(log)
+		WithLogger(log).
+		WithStun(*h.options.Stun)
 
 	t := time.Now()
 	log.Infof("%s <-> %s", conn.RemoteAddr(), pc.LocalAddr())
