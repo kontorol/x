@@ -229,6 +229,9 @@ func ParseService(cfg *config.ServiceConfig) (service.Service, error) {
 		return nil, err
 	}
 
+	if STUN == nil {
+		STUN = stun.EmptyStun()
+	}
 	s := xservice.NewService(cfg.Name, ln, h, *STUN,
 		xservice.AdmissionOption(admission.AdmissionGroup(admissions...)),
 		xservice.LoggerOption(serviceLogger),
