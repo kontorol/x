@@ -2,7 +2,7 @@ module github.com/go-gost/x
 
 go 1.18
 
-replace github.com/go-gost/core => github.com/kontorol/core v0.0.0-20221019000459-27550f54133e
+replace github.com/go-gost/core => github.com/kontorol/core v0.0.0-20221019005438-9773264fb7a3
 
 require (
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137
