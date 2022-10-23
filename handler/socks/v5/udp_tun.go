@@ -9,6 +9,7 @@ import (
 	"github.com/go-gost/gosocks5"
 	"github.com/go-gost/x/internal/net/udp"
 	"github.com/go-gost/x/internal/util/socks"
+	"golang.org/x/sys/unix"
 )
 
 func (h *socks5Handler) handleUDPTun(ctx context.Context, conn net.Conn, network, address string, log logger.Logger) error {
@@ -44,6 +45,22 @@ func (h *socks5Handler) handleUDPTun(ctx context.Context, conn net.Conn, network
 		log.Error(err)
 		return err
 	}
+	sc, err := pc.SyscallConn()
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	mark:=h.router.Options().SockOpts.Mark
+	err = sc.Control(func(fd uintptr) {
+		if mark != 0 {
+			if err := setMark(fd, mark); err != nil {
+				log.Warnf("set mark: %v", err)
+			}
+		}
+	})
+	if err != nil {
+		log.Error(err)
+	}
 	defer pc.Close()
 
 	saddr := gosocks5.Addr{}
@@ -70,4 +87,11 @@ func (h *socks5Handler) handleUDPTun(ctx context.Context, conn net.Conn, network
 	}).Debugf("%s >-< %s", conn.RemoteAddr(), pc.LocalAddr())
 
 	return nil
+}
+
+func setMark(fd uintptr, mark int) error {
+	if mark == 0 {
+		return nil
+	}
+	return unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_MARK, mark)
 }
